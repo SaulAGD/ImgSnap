@@ -5,5 +5,27 @@
     "express": "^5.3.0",
     "multer": "^2.5.0",
     "sharp": "^0.35.5"
-  }
+  },
+  "name": "imgsnap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SaulAGD/imgSnap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SaulAGD/imgSnap/issues"
+  },
+  "homepage": "https://github.com/SaulAGD/imgSnap#readme"
 }
