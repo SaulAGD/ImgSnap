@@ -3,18 +3,25 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Comprime y optimiza imágenes por lotes sin perder calidad visual. Soporta JPG, PNG y WebP. Procesado local con Sharp & Node.js."/>
+
     <title>ImgSnap - Compresor de Imágenes</title>
+    <link rel="icon" href="/image/imgsnap.svg" type="image/svg+xml" />
+
+
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+    <div class="max-w-xl md:max-w-3xl w-full bg-white rounded-2xl shadow-xl p-6 sm:p-8 md:p-12 border border-gray-100">
         <!-- Encabezado -->
         <div class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">ImgSnap</h1>
-            <p class="text-gray-500 text-sm mt-1">Comprime y optimiza imágenes por lotes sin perder calidad visual</p>
+            <div class="flex items-center justify-center gap-3">
+                <img src="/image/imgsnap.svg" alt="Logo de ImgSnap" class="h-12 w-12 md:h-16 md:w-16 rounded-xl shadow-sm" />
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight">ImgSnap</h1>
+            </div>
+            <p class="text-gray-500 text-sm mt-1">Comprime y optimiza imágenes por lotes sin perder calidad visual </p>
         </div>
 
         <!-- Mensajes de alerta / error -->

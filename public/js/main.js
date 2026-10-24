@@ -96,7 +96,7 @@ function renderFileList() {
             div.innerHTML = `
                 <div class="flex items-center space-x-3 truncate">
                     <!-- Miniatura de la imagen -->
-                    <img src="${previewUrl}" alt="" class="w-11 h-11 object-cover rounded-lg border border-gray-200 flex-shrink-0 shadow-sm" />
+                    <img src="${previewUrl}" alt="" class="thumb w-11 h-11 object-cover rounded-lg border border-gray-200 flex-shrink-0 shadow-sm" />
                     
                     <div class="truncate">
                         <p class="file-name truncate max-w-xs text-gray-800 font-medium text-xs sm:text-sm"></p>

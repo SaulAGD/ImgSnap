@@ -84,6 +84,19 @@ async function compressImages(req, res) {
             const safeOriginal = path.basename(file.originalname);
             const parsedName = path.parse(safeOriginal);
             let finalName = safeOriginal;
+            // Detectar el formato REAL por contenido (no por extensión ni mimetype del cliente)
+            let realFormat;
+            try {
+                realFormat = (await sharp(file.path).metadata()).format; // 'jpeg' | 'png' | 'webp' ...
+            } catch (e) {
+                realFormat = null;
+            }
+            if (!['jpeg', 'png', 'webp'].includes(realFormat)) {
+                const err = new Error(`El archivo "${safeOriginal}" no es una imagen JPG, PNG o WebP válida.`);
+                err.status = 400;
+                throw err;
+            }
+
             // rotate() aplica la orientación EXIF (fotos de móvil)
             let pipeline = sharp(file.path).rotate().resize({ width: 1920, withoutEnlargement: true });
 
@@ -93,10 +106,16 @@ async function compressImages(req, res) {
                 pipeline = pipeline.webp({ quality });
             } else {
                 // Mantener formato original con compresión
-                if (file.mimetype === 'image/png') {
+                // Si la extensión miente (ej. JPG renombrado a .png), se corrige al formato real
+                const realExt = { jpeg: '.jpg', png: '.png', webp: '.webp' }[realFormat];
+                const currentExt = parsedName.ext.toLowerCase();
+                const extOk = realFormat === 'jpeg' ? ['.jpg', '.jpeg'].includes(currentExt) : currentExt === realExt;
+                if (!extOk) finalName = `${parsedName.name}${realExt}`;
+
+                if (realFormat === 'png') {
                     // palette: true es lo que hace que "quality" reduzca el peso en PNG
                     pipeline = pipeline.png({ quality, palette: true });
-                } else if (file.mimetype === 'image/webp') {
+                } else if (realFormat === 'webp') {
                     pipeline = pipeline.webp({ quality });
                 } else {
                     pipeline = pipeline.jpeg({ quality });
@@ -129,7 +148,12 @@ async function compressImages(req, res) {
         // Limpieza también en caso de error
         removeFiles([...uploadedFiles, ...createdFiles, zipPath]);
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Hubo un error al procesar las imágenes.' });
+            // Errores de validación propios (400) muestran su mensaje; el resto es un 500 genérico
+            if (error.status === 400) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Hubo un error al procesar las imágenes.' });
+            }
         }
     }
 }

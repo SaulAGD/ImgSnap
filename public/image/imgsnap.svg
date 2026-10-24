@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ImgSnap"><defs>
+    <clipPath id="card">
+      <rect x="144" y="176" width="224" height="160" rx="26"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo blanco -->
+  <rect width="512" height="512" rx="112" fill="#fff"/>
+
+  <!-- Marco de enfoque / compresión (azul marino) -->
+  <g fill="none" stroke="#1B365D" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 160 V128 Q96 96 128 96 H160"/>
+    <path d="M352 96 H384 Q416 96 416 128 V160"/>
+    <path d="M96 352 V384 Q96 416 128 416 H160"/>
+    <path d="M352 416 H384 Q416 416 416 384 V352"/>
+  </g>
+
+  <!-- Tarjeta de imagen (azul acero) -->
+  <rect x="144" y="176" width="224" height="160" rx="26" fill="#6B8BA8"/>
+  <g clip-path="url(#card)">
+    <circle cx="198" cy="224" r="20" fill="#D4AF37"/>
+    <path d="M230 336 L296 262 L368 336 Z" fill="#fff" opacity="0.45"/>
+    <path d="M144 336 L216 254 L288 336 Z" fill="#fff" opacity="0.9"/>
+  </g>
+
+  <!-- Destello "snap" (dorado) -->
+  <circle cx="352" cy="336" r="40" fill="#D4AF37" stroke="#fff" stroke-width="12"/>
+  <path d="M360 312 L338 344 H352 L344 364 L368 330 H353 Z" fill="#1B365D"/>
+</svg>
