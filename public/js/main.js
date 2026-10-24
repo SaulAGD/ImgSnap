@@ -1,74 +1,148 @@
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const fileList = document.getElementById('file-list');
+const optionsPanel = document.getElementById('options-panel');
+const qualitySelect = document.getElementById('quality-select');
+const formatSelect = document.getElementById('format-select');
 const uploadBtn = document.getElementById('upload-btn');
+const alertBox = document.getElementById('alert-box');
 
 let selectedFiles = [];
 
-// Abrir selector al hacer clic en la caja
+// Funciones para mostrar u ocultar alertas
+function showAlert(message) {
+    alertBox.textContent = message;
+    alertBox.classList.remove('hidden');
+}
+
+function hideAlert() {
+    alertBox.textContent = '';
+    alertBox.classList.add('hidden');
+}
+
+// Abrir explorador de archivos al hacer clic en la zona
 dropZone.addEventListener('click', () => fileInput.click());
 
-
-// Efectos visuales al arrastrar archivos encima
+// Efectos visuales de Drag & Drop
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+    dropZone.classList.add('border-indigo-500', 'bg-indigo-50/50');
 });
 
 dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
 });
 
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
     if (e.dataTransfer.files.length > 0) {
         handleFiles(e.dataTransfer.files);
     }
 });
 
-
-// Detectar archivos seleccionados por el explorador
+// Selección por clic tradicional
 fileInput.addEventListener('change', (e) => {
     if (e.target.files.length > 0) {
         handleFiles(e.target.files);
+        fileInput.value = '';
     }
 });
 
+// Filtrar y procesar archivos seleccionados
 function handleFiles(files) {
-    selectedFiles = Array.from(files);
+    hideAlert();
+    const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    const newFiles = Array.from(files);
+
+    // Validar en el cliente que sean imágenes válidas
+    const invalidFiles = newFiles.filter(file => !validMimes.includes(file.type));
+    if (invalidFiles.length > 0) {
+        showAlert(`Se ignoraron ${invalidFiles.length} archivo(s) no soportados. Solo se admiten JPG, PNG y WebP.`);
+    }
+
+    const validIncoming = newFiles.filter(file => validMimes.includes(file.type));
+    validIncoming.forEach(newFile => {
+        const alreadyExists = selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size);
+        if (!alreadyExists) {
+            selectedFiles.push(newFile);
+        }
+    });
     renderFileList();
 }
 
-
+// Renderizar la lista de imágenes con previsualización (miniatura)
 function renderFileList() {
     fileList.innerHTML = '';
+
     if (selectedFiles.length > 0) {
+        optionsPanel.classList.remove('hidden');
         uploadBtn.classList.remove('hidden');
-        selectedFiles.forEach((file) => {
+
+        selectedFiles.forEach((file, index) => {
+            // Creamos una URL temporal para la miniatura
+            const previewUrl = URL.createObjectURL(file);
+
             const div = document.createElement('div');
-            div.className = 'flex justify-between items-center text-sm bg-gray-50 border border-gray-200 p-2 rounded';
+            div.className = 'flex justify-between items-center text-sm bg-gray-50 border border-gray-200 p-2.5 rounded-xl hover:bg-gray-100/70 transition-colors';
             div.innerHTML = `
-                <span class="truncate max-w-xs text-gray-700">${file.name}</span> 
-                <span class="text-gray-400">${(file.size / 1024).toFixed(1)} KB</span>
+                <div class="flex items-center space-x-3 truncate">
+                    <!-- Miniatura de la imagen -->
+                    <img src="${previewUrl}" alt="${file.name}" class="w-11 h-11 object-cover rounded-lg border border-gray-200 flex-shrink-0 shadow-sm" />
+                    
+                    <div class="truncate">
+                        <p class="truncate max-w-xs text-gray-800 font-medium text-xs sm:text-sm">${file.name}</p>
+                        <div class="flex items-center space-x-2 mt-0.5">
+                            <span class="text-[10px] bg-indigo-100 text-indigo-700 font-semibold px-1.5 py-0.5 rounded">
+                                ${file.name.split('.').pop().toUpperCase()}
+                            </span>
+                            <span class="text-xs text-gray-400">
+                                ${(file.size / (1024 * 1024)).toFixed(2)} MB
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón eliminar -->
+                <button type="button" 
+                        class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg text-sm font-bold transition-colors ml-2" 
+                        title="Quitar imagen"
+                        onclick="removeFile(${index})">
+                    ✕
+                </button>
             `;
             fileList.appendChild(div);
         });
     } else {
+        optionsPanel.classList.add('hidden');
         uploadBtn.classList.add('hidden');
     }
 }
 
+// Función global para quitar una imagen individual de la lista
+window.removeFile = function (index) {
+    selectedFiles.splice(index, 1);
+    renderFileList();
+};
 
+// Enviar imágenes al servidor junto con las opciones elegidas
 uploadBtn.addEventListener('click', async () => {
     if (selectedFiles.length === 0) return;
 
+    hideAlert();
     const formData = new FormData();
+
+    // 1. Adjuntar imágenes
     selectedFiles.forEach(file => {
         formData.append('images', file);
     });
 
-    uploadBtn.textContent = 'Procesando imágenes... ⏳';
+    // 2. Adjuntar configuración de calidad y formato
+    formData.append('quality', qualitySelect.value);
+    formData.append('format', formatSelect.value);
+
+    // Estado visual de carga
+    uploadBtn.textContent = 'Optimizando imágenes... ';
     uploadBtn.disabled = true;
 
     try {
@@ -77,19 +151,23 @@ uploadBtn.addEventListener('click', async () => {
             body: formData
         });
 
-        if (!response.ok) throw new Error('Error en el servidor');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al procesar las imágenes.');
+        }
 
-        // Convertir la respuesta del servidor en un archivo Blob descargable
+        // Descargar el ZIP resultante
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'imgsnap-optimized.zip';
+        a.href = downloadUrl;
+        a.download = `imgsnap-optimized-${formatSelect.value === 'webp' ? 'webp' : 'compressed'}.zip`;
         document.body.appendChild(a);
         a.click();
         a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
 
-        uploadBtn.textContent = '¡Listo! Descargado con éxito';
+        uploadBtn.textContent = '¡Listo! Descargado con éxito.';
         setTimeout(() => {
             uploadBtn.textContent = 'Comprimir y Descargar ZIP';
             uploadBtn.disabled = false;
@@ -97,7 +175,7 @@ uploadBtn.addEventListener('click', async () => {
 
     } catch (error) {
         console.error(error);
-        alert('Hubo un error al comprimir las imágenes.');
+        showAlert(error.message || 'Ocurrió un error al procesar las imágenes.');
         uploadBtn.textContent = 'Comprimir y Descargar ZIP';
         uploadBtn.disabled = false;
     }

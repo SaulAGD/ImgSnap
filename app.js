@@ -9,47 +9,84 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Asegurar que existan las carpetas temporales
-if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
-if (!fs.existsSync('./outputs')) fs.mkdirSync('./outputs');
+// Directorios de trabajo
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const OUTPUTS_DIR = path.join(__dirname, 'outputs');
 
+// 1. Limpieza de arranque: asegura que las carpetas existan y borra residuos anteriores
+function initDirectories() {
+    [UPLOADS_DIR, OUTPUTS_DIR].forEach(dir => {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        } else {
+            // Vaciar archivos residuales si el servidor se apagó de golpe
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                try {
+                    fs.unlinkSync(path.join(dir, file));
+                } catch (e) {
+                    console.error(`No se pudo eliminar ${file}:`, e.message);
+                }
+            }
+        }
+    });
+}
+initDirectories();
 
-// Configuración de Multer para guardar temporalmente las imágenes
-const upload = multer({ dest: 'uploads/' });
+// 2. Configuración de Multer con filtro de tipo y límite generoso (50 MB)
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
 
+const fileFilter = (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Formato no soportado (${file.originalname}). Solo se aceptan JPG, PNG y WebP.`));
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 50 * 1024 * 1024 } // Límite de 50 MB por archivo
+});
 
 app.use(express.static('public'));
 app.use(express.json());
 
-
-// Ruta para recibir, comprimir y empaquetar en ZIP
+// 3. Ruta para recibir, comprimir y empaquetar en ZIP
 app.post('/upload', upload.array('images'), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'No se subió ninguna imagen.' });
+            return res.status(400).json({ error: 'No se subió ninguna imagen válida.' });
         }
 
-        const outputDir = path.join(__dirname, 'outputs');
-        const zipName = `compressed-${Date.now()}.zip`;
-        const zipPath = path.join(outputDir, zipName);
+        // Parámetros dinámicos enviados desde el frontend
+        const quality = Math.min(Math.max(parseInt(req.body.quality) || 80, 10), 100);
+        const targetFormat = req.body.format || 'original'; // 'original' o 'webp'
 
-        // Crear flujo para escribir el archivo ZIP
+        const zipName = `compressed-${Date.now()}.zip`;
+        const zipPath = path.join(OUTPUTS_DIR, zipName);
+
         const output = fs.createWriteStream(zipPath);
         const archive = new ZipArchive({ zlib: { level: 9 } });
         const createdFiles = [];
-        
+
         output.on('close', () => {
-            // Enviar el ZIP al cliente para su descarga y luego limpiar archivos
             res.download(zipPath, 'imgsnap-optimized.zip', (err) => {
-                if (err) console.error("Error al descargar:", err);
-                
-                // Limpieza de archivos temporales (opcional pero recomendado)
+                if (err && !res.headersSent) {
+                    console.error("Error al descargar:", err);
+                }
+                // Limpieza de archivos temporales
                 try {
-                    req.files.forEach(file => fs.unlinkSync(file.path));
-                    createdFiles.forEach(filePath => fs.unlinkSync(filePath));
-                    fs.unlinkSync(zipPath);
+                    req.files.forEach(file => fs.existsSync(file.path) && fs.unlinkSync(file.path));
+                    createdFiles.forEach(file => fs.existsSync(file) && fs.unlinkSync(file));
+                    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
                 } catch (e) {
-                    console.error("Error limpiando temporales:", e);
+                    console.error("Error limpiando temporales:", e.message);
                 }
             });
         });
@@ -60,27 +97,32 @@ app.post('/upload', upload.array('images'), async (req, res) => {
 
         archive.pipe(output);
 
-        // Procesar cada imagen con Sharp
+        // Procesar cada imagen con Sharp según las opciones elegidas
         for (const file of req.files) {
-            const compressedFileName = `optimized-${file.originalname}`;
-            const compressedFilePath = path.join('./uploads', compressedFileName);
-            createdFiles.push(compressedFilePath);
+            const parsedName = path.parse(file.originalname);
+            let finalName = file.originalname;
+            let pipeline = sharp(file.path).resize({ width: 1920, withoutEnlargement: true });
 
-            // Redimensionar (máx 1200px de ancho) y bajar calidad a 80% con Sharp
-            let pipeline = sharp(file.path).resize({ width: 1200, withoutEnlargement: true });
-            
-            if (file.mimetype === 'image/png') {
-                pipeline = pipeline.png({ quality: 80 });
-            } else if (file.mimetype === 'image/webp') {
-                pipeline = pipeline.webp({ quality: 80 });
+            if (targetFormat === 'webp') {
+                // Convertir todo a WebP
+                finalName = `${parsedName.name}.webp`;
+                pipeline = pipeline.webp({ quality });
             } else {
-                pipeline = pipeline.jpeg({ quality: 80 });
+                // Mantener formato original con compresión
+                if (file.mimetype === 'image/png') {
+                    pipeline = pipeline.png({ quality });
+                } else if (file.mimetype === 'image/webp') {
+                    pipeline = pipeline.webp({ quality });
+                } else {
+                    pipeline = pipeline.jpeg({ quality });
+                }
             }
 
-            await pipeline.toFile(compressedFilePath);
+            const compressedFilePath = path.join(UPLOADS_DIR, `optimized-${finalName}`);
+            createdFiles.push(compressedFilePath);
 
-            // Añadir la imagen procesada al archivo ZIP
-            archive.file(compressedFilePath, { name: file.originalname });
+            await pipeline.toFile(compressedFilePath);
+            archive.file(compressedFilePath, { name: finalName });
         }
 
         await archive.finalize();
@@ -91,7 +133,19 @@ app.post('/upload', upload.array('images'), async (req, res) => {
     }
 });
 
+// Middleware para capturar errores de Multer (archivos inválidos o muy pesados)
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Una de las imágenes supera el límite de 50 MB.' });
+        }
+        return res.status(400).json({ error: err.message });
+    } else if (err) {
+        return res.status(400).json({ error: err.message });
+    }
+    next();
+});
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Servidor ImgSnap listo en http://localhost:${port}`);
 });
