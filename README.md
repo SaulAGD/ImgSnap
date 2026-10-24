@@ -63,3 +63,11 @@ Abre http://localhost:3000 (el puerto se puede cambiar con la variable `PORT` en
 ## Licencia
 
 MIT. Ver [LICENSE](LICENSE).
+
+---
+
+## Notas sobre la compresión
+
+- **PNG:** se comprime reduciendo los colores a 256 como máximo (con pérdida). La diferencia entre niveles de calidad es pequeña. Funciona muy bien con logos, iconos y capturas; para fotos conviene JPG o WebP.
+- **Formato real:** se detecta por el contenido del archivo y no por su extensión. Un JPG renombrado a `.png` se trata como JPG, y un archivo que no sea imagen se rechaza.
+- **Nunca pesa más:** si el resultado comprimido pesa igual o más que el original, el ZIP conserva el original.

@@ -122,14 +122,22 @@ async function compressImages(req, res) {
                 }
             }
 
-            finalName = uniqueName(finalName, usedNames);
-
             // Nombre temporal propio (índice) para no depender del nombre del usuario
             const compressedFilePath = path.join(UPLOADS_DIR, `optimized-${Date.now()}-${index}${path.extname(finalName)}`);
             createdFiles.push(compressedFilePath);
 
             await pipeline.toFile(compressedFilePath);
-            archive.file(compressedFilePath, { name: finalName });
+
+            // Nunca devolver un archivo más pesado que el original: si pasa, se conserva el original
+            if (fs.statSync(compressedFilePath).size >= fs.statSync(file.path).size) {
+                const realExt = { jpeg: '.jpg', png: '.png', webp: '.webp' }[realFormat];
+                const currentExt = parsedName.ext.toLowerCase();
+                const extOk = realFormat === 'jpeg' ? ['.jpg', '.jpeg'].includes(currentExt) : currentExt === realExt;
+                const originalName = extOk ? safeOriginal : `${parsedName.name}${realExt}`;
+                archive.file(file.path, { name: uniqueName(originalName, usedNames) });
+            } else {
+                archive.file(compressedFilePath, { name: uniqueName(finalName, usedNames) });
+            }
         }
 
         await archive.finalize();
