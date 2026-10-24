@@ -8,6 +8,7 @@ const uploadBtn = document.getElementById('upload-btn');
 const alertBox = document.getElementById('alert-box');
 
 let selectedFiles = [];
+const MAX_FILES = 20; // Debe coincidir con el límite del servidor
 
 // Funciones para mostrar u ocultar alertas
 function showAlert(message) {
@@ -62,12 +63,19 @@ function handleFiles(files) {
     }
 
     const validIncoming = newFiles.filter(file => validMimes.includes(file.type));
+    let limitExceeded = false;
     validIncoming.forEach(newFile => {
         const alreadyExists = selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size);
-        if (!alreadyExists) {
-            selectedFiles.push(newFile);
+        if (alreadyExists) return;
+        if (selectedFiles.length >= MAX_FILES) {
+            limitExceeded = true;
+            return;
         }
+        selectedFiles.push(newFile);
     });
+    if (limitExceeded) {
+        showAlert(`Máximo ${MAX_FILES} imágenes por vez. Se ignoraron las que sobraban.`);
+    }
     renderFileList();
 }
 
@@ -88,13 +96,12 @@ function renderFileList() {
             div.innerHTML = `
                 <div class="flex items-center space-x-3 truncate">
                     <!-- Miniatura de la imagen -->
-                    <img src="${previewUrl}" alt="${file.name}" class="w-11 h-11 object-cover rounded-lg border border-gray-200 flex-shrink-0 shadow-sm" />
+                    <img src="${previewUrl}" alt="" class="w-11 h-11 object-cover rounded-lg border border-gray-200 flex-shrink-0 shadow-sm" />
                     
                     <div class="truncate">
-                        <p class="truncate max-w-xs text-gray-800 font-medium text-xs sm:text-sm">${file.name}</p>
+                        <p class="file-name truncate max-w-xs text-gray-800 font-medium text-xs sm:text-sm"></p>
                         <div class="flex items-center space-x-2 mt-0.5">
-                            <span class="text-[10px] bg-indigo-100 text-indigo-700 font-semibold px-1.5 py-0.5 rounded">
-                                ${file.name.split('.').pop().toUpperCase()}
+                            <span class="file-ext text-[10px] bg-indigo-100 text-indigo-700 font-semibold px-1.5 py-0.5 rounded">
                             </span>
                             <span class="text-xs text-gray-400">
                                 ${(file.size / (1024 * 1024)).toFixed(2)} MB
@@ -106,11 +113,17 @@ function renderFileList() {
                 <!-- Botón eliminar -->
                 <button type="button" 
                         class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg text-sm font-bold transition-colors ml-2" 
-                        title="Quitar imagen"
-                        onclick="removeFile(${index})">
+                        title="Quitar imagen">
                     ✕
                 </button>
             `;
+            // Liberar la URL temporal de la miniatura cuando ya cargó (evita fuga de memoria)
+            const thumb = div.querySelector('.thumb');
+            thumb.addEventListener('load', () => URL.revokeObjectURL(previewUrl));
+            // textContent evita XSS con nombres de archivo maliciosos
+            div.querySelector('.file-name').textContent = file.name;
+            div.querySelector('.file-ext').textContent = file.name.split('.').pop().toUpperCase();
+            div.querySelector('button').addEventListener('click', () => removeFile(index));
             fileList.appendChild(div);
         });
     } else {

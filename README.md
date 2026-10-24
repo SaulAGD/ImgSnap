@@ -46,3 +46,20 @@ Sigue estos pasos para correr el proyecto en tu máquina local:
 git clone https://github.com/SaulAGD/imgSnap.git
 cd imgSnap
 ```
+
+### 2. Instalar dependencias y ejecutar
+
+```bash
+npm install
+npm start
+```
+
+Abre http://localhost:3000 (el puerto se puede cambiar con la variable `PORT` en `.env`).
+
+> Límites: hasta 20 imágenes por vez y 50 MB por archivo.
+
+---
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).
