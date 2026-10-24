@@ -1,4 +1,4 @@
-# 📸 ImgSnap
+# ImgSnap
 
 > Herramienta web local, rápida y moderna para comprimir, redimensionar y optimizar imágenes por lotes sin perder calidad visual.
 
@@ -10,22 +10,22 @@
 
 ---
 
-## ✨ Características
+## Características
 
-- 🖱️ **Drag & Drop interactivo:** Arrastra archivos directamente o elígelos mediante el explorador de archivos.
-- 🖼️ **Miniaturas en tiempo real:** Visualiza las imágenes seleccionadas, su peso en MB y su formato antes de procesar.
-- ⚙️ **Compresión personalizable:**
+- **Drag & Drop interactivo:** Arrastra archivos directamente o elígelos mediante el explorador de archivos.
+- **Miniaturas en tiempo real:** Visualiza las imágenes seleccionadas, su peso en MB y su formato antes de procesar.
+- **Compresión personalizable:**
   - **Alta (90%):** Ideal para fotografía y detalles finos.
   - **Equilibrada (80% - Recomendada):** Óptima para desarrollo web y redes sociales.
   - **Máxima compresión (50%):** Mayor ahorro de espacio posible.
-- 🌐 **Conversión a WebP:** Convierte cualquier imagen (JPG, PNG) al formato moderno WebP de Google con un solo clic.
-- 📦 **Empaquetado en ZIP automático:** Descarga todas tus imágenes procesadas juntas en un archivo `.zip`.
-- 🧹 **Gestión limpia de almacenamiento:** Limpieza automática de archivos temporales tanto al finalizar la descarga como al arrancar el servidor.
-- 🔒 **Validación y seguridad:** Filtro estricto que solo admite formatos válidos (JPG, PNG, WebP) con soporte de hasta 50 MB por archivo.
+- **Conversión a WebP:** Convierte cualquier imagen (JPG, PNG) al formato moderno WebP de Google con un solo clic.
+- **Empaquetado en ZIP automático:** Descarga todas tus imágenes procesadas juntas en un archivo `.zip`.
+- **Gestión limpia de almacenamiento:** Limpieza automática de archivos temporales tanto al finalizar la descarga como al arrancar el servidor.
+- **Validación y seguridad:** Filtro estricto que solo admite formatos válidos (JPG, PNG, WebP) con soporte de hasta 50 MB por archivo.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 - **Entorno:** Node.js
 - **Servidor:** Express 5
@@ -36,7 +36,7 @@
 
 ---
 
-## 🚀 Instalación y Uso Rápido
+## Instalación y Uso Rápido
 
 Sigue estos pasos para correr el proyecto en tu máquina local:
 
